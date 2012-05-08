@@ -312,16 +312,29 @@ Warrior.loadFrom = function(config, text){
 };
 
 
-var programText = require('fs').readFileSync('dwarf.red', 'utf-8');
+var program = require('commander');
+program
+	.version('0.0.1')
+	.usage('[options] <program1.red> <program2.red>')
+	.option('-c, --max-cycles <n>', 'Maximum number of cycles before a tie', parseInt)
+	.option('-s, --core-size <n>', 'Size of CORE memory, defaults to 8192', parseInt)
+	.parse(process.argv);
+if(program.args.length < 2){
+	console.error('You must supply two programs to execute');
+	process.exit(1);
+}
 
-var mars = new Mars({coreSize:8192,maxCycles:10});
+var config = {coreSize:program.coreSize, maxCycles:program.maxCycles};
+var mars = new Mars(config);
 mars.on('step', console.log);
 mars.on('error', console.error);
 mars.on('died', console.log);
 mars.on('won', console.log);
 mars.on('tie', console.log);
-mars.loadWarriorFrom(programText);
-mars.loadWarriorFrom(programText);
+
+var read = require('fs').readFileSync;
+mars.loadWarriorFrom(read(program.args[0], 'utf-8'));
+mars.loadWarriorFrom(read(program.args[1], 'utf-8'));
 
 while(mars.step()){}
 
