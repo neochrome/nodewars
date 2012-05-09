@@ -143,17 +143,17 @@ Mars.prototype.step = function(){
 	for(var i = 0; i < this.warriors.length; i++){
 		var warrior = this.warriors[i];
 		this.stepWarrior(warrior);
-		if(warrior.isDead()){ this.emit('died', warrior.name); continue; }
+		if(warrior.isDead()){ this.emit('died', {warrior:warrior.name, cycles:this.cycles}); continue; }
 		stillAlive.push(warrior);
 	}
-	if(stillAlive.length === 1){ this.emit('won', stillAlive[0].name); return false; }
-	if(this.cycles === this.config.maxCycles){ this.emit('tie', this.cycles); return false; }
+	if(stillAlive.length === 1){ this.emit('won', {warrior:stillAlive[0].name, cycles:this.cycles}); return false; }
+	if(this.cycles === this.config.maxCycles){ this.emit('tie', {cycles:this.cycles}); return false; }
 
 	return true;
 };
 Mars.prototype.loadWarriorFrom = function(text){
 	try {
-		var lastLoadAddress = this.warriors.length ? this.warriors[this.warriors.length - 1].peekTask() : 0;
+		var lastLoadAddress = this.warriors.length ? this.warriors[this.warriors.length - 1].tasks.peek() : 0;
 		var randomStartAddressOffset = Math.random()*(this.config.coreSize - this.config.maxLength)|0;
 		var loadOffset = lastLoadAddress + randomStartAddressOffset;
 		
@@ -179,6 +179,7 @@ Mars.prototype.loadWarriorFrom = function(text){
 	}
 };
 
+
 var Warrior = function(name, pc, instructions){
 	this.name = name;
 	this.tasks = [pc];
@@ -186,17 +187,15 @@ var Warrior = function(name, pc, instructions){
 		this.push(pc);
 	};
 	this.tasks.dequeue = function(){
-		var pc = this.shift();
-		return pc;
+		return this.shift();
+	};
+	this.tasks.peek = function(){
+		return this[0];
 	};
 	this.instructions = instructions;
 };
 Warrior.prototype.isDead = function(){ return this.tasks.length === 0; };
 Warrior.prototype.isAlive = function(){ return this.tasks.length > 0; };
-Warrior.prototype.peekTask = function(){
-	if(this.isDead()){ throw 'Warrior \'' + this.name + '\' is dead'; }
-	return this.tasks[0];
-};
 Warrior.loadFrom = function(config, text){
 
 	var Directives = {
@@ -326,7 +325,7 @@ if(program.args.length < 2){
 
 var config = {coreSize:program.coreSize, maxCycles:program.maxCycles};
 var mars = new Mars(config);
-mars.on('step', console.log);
+//mars.on('step', console.log);
 mars.on('error', console.error);
 mars.on('died', console.log);
 mars.on('won', console.log);
